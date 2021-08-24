@@ -1,0 +1,7 @@
+.venv
+dataset/
+lightning_logs/
+*.ckpt
+*.png
+__pycache__
+*.pyc
