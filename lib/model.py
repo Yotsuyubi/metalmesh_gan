@@ -60,29 +60,33 @@ class Generator(nn.Module):
         super().__init__()
 
         self.encoder = nn.Sequential(
-            nn.Conv1d(8, 64, 15, stride=2),
+            nn.Conv1d(8, 64, 15),
             nn.BatchNorm1d(64),
             nn.LeakyReLU(),
+            nn.MaxPool1d(2),
 
-            nn.Conv1d(64, 128, 15, stride=2),
+            nn.Conv1d(64, 128, 15),
             nn.BatchNorm1d(128),
             nn.LeakyReLU(),
+            nn.MaxPool1d(2),
 
-            nn.Conv1d(128, 256, 15, stride=2),
+            nn.Conv1d(128, 256, 15),
             nn.BatchNorm1d(256),
             nn.LeakyReLU(),
+            nn.MaxPool1d(2),
 
-            nn.Conv1d(256, 512, 15, stride=2),
+            nn.Conv1d(256, 512, 15),
             nn.BatchNorm1d(512),
             nn.LeakyReLU(),
 
+            nn.AdaptiveAvgPool1d((1,)),
             nn.Flatten()
         )
 
         self.decoder_img = nn.ModuleList([
             nn.Sequential(
                 nn.PixelShuffle(2),
-                nn.Conv2d(96//4, 256, 3, padding=1),
+                nn.Conv2d(32//4, 256, 3, padding=1),
                 nn.BatchNorm2d(256),
                 nn.ReLU(),
                 nn.Conv2d(256, 256, 3, padding=1),
@@ -90,7 +94,7 @@ class Generator(nn.Module):
                 nn.ReLU(),
             ),
             nn.Sequential(
-                nn.Conv2d(256 + 24, 256, 3, padding=1),
+                nn.Conv2d(256, 256, 3, padding=1),
                 nn.PixelShuffle(2),
                 nn.Conv2d(64, 128, 3, padding=1),
                 nn.BatchNorm2d(128),
@@ -100,7 +104,7 @@ class Generator(nn.Module):
                 nn.ReLU(),
             ),
             nn.Sequential(
-                nn.Conv2d(128 + 6, 128, 3, padding=1),
+                nn.Conv2d(128, 128, 3, padding=1),
                 nn.PixelShuffle(2),
                 nn.Conv2d(32, 64, 3, padding=1),
                 nn.BatchNorm2d(64),
@@ -113,39 +117,9 @@ class Generator(nn.Module):
             ),
         ])
 
-        # self.decoder_img = nn.Sequential(
-
-        #     nn.PixelShuffle(2),
-        #     nn.Conv2d(384//4, 256, 3, padding=1),
-        #     nn.BatchNorm2d(256),
-        #     nn.ReLU(),
-        #     nn.Conv2d(256, 256, 3, padding=1),
-        #     nn.BatchNorm2d(256),
-        #     nn.ReLU(),
-
-        #     nn.PixelShuffle(2),
-        #     nn.Conv2d(64, 128, 3, padding=1),
-        #     nn.BatchNorm2d(128),
-        #     nn.ReLU(),
-        #     nn.Conv2d(128, 128, 3, padding=1),
-        #     nn.BatchNorm2d(128),
-        #     nn.ReLU(),
-
-        #     nn.PixelShuffle(2),
-        #     nn.Conv2d(32, 64, 3, padding=1),
-        #     nn.BatchNorm2d(64),
-        #     nn.ReLU(),
-        #     nn.Conv2d(64, 64, 3, padding=1),
-        #     nn.BatchNorm2d(64),
-        #     nn.ReLU(),
-
-        #     nn.Conv2d(64, 1, 1),
-        #     nn.Sigmoid(),
-        # )
-
         self.decoder_thickness = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(96*4*4, 128),
+            nn.Linear(512, 128),
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
@@ -157,18 +131,9 @@ class Generator(nn.Module):
 
     def forward(self, x):
         encode = self.encoder(x)
-        decode_img = self.decoder_img[0](encode.view(-1, 96, 4, 4))
-        decode_img = self.decoder_img[1](
-            th.cat([encode.view(-1, 24, 8, 8), decode_img], dim=1)
-        )
-        decode_img = self.decoder_img[2](
-            th.cat([encode.view(-1, 6, 16, 16), decode_img], dim=1)
-        )
-        # decode_img = th.where(
-        #     decode_img >= 0.5,
-        #     1.0, 0.0
-        # )
-        # decode_img = decode_img.type_as(x)
+        decode_img = self.decoder_img[0](encode.view(-1, 32, 4, 4))
+        decode_img = self.decoder_img[1](decode_img)
+        decode_img = self.decoder_img[2](decode_img)
         decode_thickness = self.decoder_thickness(encode)
         return decode_img, decode_thickness
 
