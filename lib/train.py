@@ -23,7 +23,8 @@ class Fresnel(nn.Module):
         imp_re = x[:, 4:6, :]
         imp_im = x[:, 6:8, :]
         n_hat = th.abs(n) + 1j*th.abs(k)
-        k_0 = 2.0 * np.pi * self.freq.repeat(x.shape[0], 2, 1) / self.C
+        k_0 = (2.0 * np.pi *
+               self.freq.repeat(x.shape[0], 2, 1) / self.C).type_as(x)
         Z1 = 1
         Z2 = th.abs(imp_re) + 1j*imp_im
         Z3 = 1
