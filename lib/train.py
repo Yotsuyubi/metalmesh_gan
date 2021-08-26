@@ -123,14 +123,13 @@ class LitGAN(pl.LightningModule):
                 self.nnsim.spectrum(imgs_hat, thickness_hat),
                 spectrum
             )
-            # thickness_loss = self.thickness_loss(
-            #     thickness_hat,
-            #     thickness
-            # )
-            loss = g_loss + reconstruction_loss  # + thickness_loss
+            thickness_loss = self.thickness_loss(
+                thickness_hat,
+                thickness
+            )
+            loss = g_loss + reconstruction_loss + thickness_loss
 
             self.log('reconstruction_loss', reconstruction_loss, prog_bar=True)
-            # self.log('thickness_loss', thickness_loss, prog_bar=True)
             self.log('g_loss', g_loss, prog_bar=True)
 
             return loss
@@ -162,12 +161,12 @@ class LitGAN(pl.LightningModule):
 
     def configure_optimizers(self):
         opt_g = th.optim.Adam(
-            self.generator.parameters(), lr=1e-3
+            self.generator.parameters(), lr=1e-4
         )
         opt_d = th.optim.Adam(
-            self.critic.parameters(), lr=1e-3
+            self.critic.parameters(), lr=1e-4
         )
-        return [opt_g, opt_d], []
+        return [opt_g, opt_d, opt_d, opt_d], []
 
 
 if __name__ == "__main__":
