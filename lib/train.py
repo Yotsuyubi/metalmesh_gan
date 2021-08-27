@@ -97,7 +97,7 @@ class LitGAN(pl.LightningModule):
         return F.binary_cross_entropy(y_hat, y)
 
     def reconstruction_loss(self, y_hat, y):
-        return F.l1_loss(y_hat, y)
+        return F.mse_loss(y_hat, y)
 
     def thickness_loss(self, y_hat, y):
         return F.binary_cross_entropy(y_hat, y)
@@ -119,7 +119,7 @@ class LitGAN(pl.LightningModule):
             g_loss = self.adversarial_loss(
                 self.critic(imgs_hat),
                 valid
-            )
+            ) * 1e-2
             reconstruction_loss = self.reconstruction_loss(
                 self.nnsim.spectrum(imgs_hat, thickness_hat),
                 spectrum
@@ -165,9 +165,9 @@ class LitGAN(pl.LightningModule):
             self.generator.parameters(), lr=1e-4
         )
         opt_d = th.optim.Adam(
-            self.critic.parameters(), lr=1e-4
+            self.critic.parameters(), lr=1e-3
         )
-        return [opt_g, opt_d, opt_d, opt_d], []
+        return [opt_g, opt_d], []
 
 
 if __name__ == "__main__":
@@ -177,15 +177,12 @@ if __name__ == "__main__":
                               shuffle=True, num_workers=4)
 
     nn_sim = LitNNSimulator()
-    nn_sim.load_from_checkpoint("model/nnsim.ckpt")
+    nn_sim = nn_sim.load_from_checkpoint("model/nnsim.ckpt")
     gan = LitGAN(nnsim=nn_sim)
-    # gan.load_from_checkpoint(
-    #     "lightning_logs/version_0/checkpoints/epoch=68-step=17249.ckpt"
-    # )
 
     # training
     trainer = pl.Trainer(
-        gpus=0,
-        # resume_from_checkpoint="lightning_logs/version_14/checkpoints/epoch=11-step=2999.ckpt"
+        gpus=1,
     )
     trainer.fit(gan, train_loader)
+    trainer.save_checkpoint("gan.ckpt")
