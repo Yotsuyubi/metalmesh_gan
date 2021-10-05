@@ -1,0 +1,4 @@
+batchsize: 256
+num_d_train: 5
+g_learning_rate: 0.0001
+d_learning_rate: 0.00001

@@ -9,6 +9,7 @@ torch = "*"
 pytorch-lightning = "*"
 matplotlib = "*"
 torchvision = "*"
+nn-simulator = {git = "https://github.com/Yotsuyubi/nn_simulator"}
 
 [dev-packages]
 

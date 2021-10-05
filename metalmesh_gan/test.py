@@ -47,10 +47,20 @@ spectrum = th.rand(1, 8, 250).requires_grad_(True)
 # plt.savefig('_angle.png')
 # plt.close()
 
-optim = th.optim.Adam([spectrum], lr=1e-2)
+optim = th.optim.Adam([spectrum], lr=1e-1)
 for _ in range(100):
     optim.zero_grad()
     image, thickness = model(spectrum)
+
+    image_unit = image[0, 0, 32//2:, 32//2:]
+    image_tri = th.tril(image_unit)
+    image_unit = image_tri + image_tri.T - th.diag(th.diagonal(image_unit))
+    image = th.zeros(1, 1, 32, 32)
+    image[0, 0, :32//2, :32//2] = th.rot90(image_unit, k=2)
+    image[0, 0, :32//2, 32//2:] = th.rot90(image_unit, k=1)
+    image[0, 0, 32//2:, 32//2:] = image_unit
+    image[0, 0, 32//2:, :32//2] = th.rot90(image_unit, k=-1)
+
     # thickness = th.eye(16)[3].unsqueeze(0).type_as(thickness)
     y = nnsim(image, thickness)[0]
     loss = -(th.abs(th.abs(y[0]) - th.abs(y[1])).max())
@@ -61,11 +71,27 @@ for _ in range(100):
 image, thickness = model(spectrum)
 # thickness = th.eye(16)[3].unsqueeze(0).type_as(thickness)
 image = th.where(image >= 0.5, 1.0, 0.0)
+image_unit = image[0, 0, 32//2:, 32//2:]
+image_tri = th.tril(image_unit)
+image_unit = image_tri + image_tri.T - th.diag(th.diagonal(image_unit))
+image = th.zeros(1, 1, 32, 32)
+image[0, 0, :32//2, :32//2] = th.rot90(image_unit, k=2)
+image[0, 0, 32//2:, :32//2] = th.rot90(image_unit, k=-1)
+image[0, 0, 32//2:, 32//2:] = image_unit
+image[0, 0, :32//2, 32//2:] = th.rot90(image_unit, k=1)
 torchvision.utils.save_image(image, "test.png")
 print(th.max(thickness, dim=1)[1]+1)
 
 image, thickness = model(spectrum)
 image = th.where(image >= 0.5, 1.0, 0.0)
+image_unit = image[0, 0, 32//2:, 32//2:]
+image_tri = th.tril(image_unit)
+image_unit = image_tri + image_tri.T - th.diag(th.diagonal(image_unit))
+image = th.zeros(1, 1, 32, 32)
+image[0, 0, :32//2, :32//2] = th.rot90(image_unit, k=2)
+image[0, 0, 32//2:, :32//2] = th.rot90(image_unit, k=-1)
+image[0, 0, 32//2:, 32//2:] = image_unit
+image[0, 0, :32//2, 32//2:] = th.rot90(image_unit, k=1)
 # thickness = th.eye(16)[3].unsqueeze(0).type_as(thickness)
 y = nnsim(image, thickness).detach().numpy()[0]
 
